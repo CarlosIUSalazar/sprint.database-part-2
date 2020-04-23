@@ -1,16 +1,10 @@
 /* eslint-disable prettier/prettier */
 module.exports = (knex, User) => {
   return async () => {
-    const allUsers = await knex.select("id", "username").from("users"); // fix me!
-    console.log("ALLUSEEEERS", allUsers);
-    return allUsers;
+    const allUsers = await knex.select("id", "username").from("users");
 
-    //const singleUsers = allUsers.map(user => user)
-    //console.log("SERIALIZEEEE", allUsers[0].serialize())
-    // let resultObj = {};
-    // allUsers.forEach((item) => resultObj = item)
-    // console.log("RESULTOBJJJJ", resultObj)
+    const serializedUsers = allUsers.map((user) => new User(user));
 
-    // allUsers.map(user => user.id);
+    return serializedUsers;
   };
 };

@@ -1,5 +1,10 @@
 module.exports = (knex, Channel) => {
-  return () => {
-    return Promise.resolve([]); // fix me!
+  return async () => {
+    const allChannels = await knex.select("id", "name").from("channels");
+    const serializedChannels = allChannels.map(
+      (channel) => new Channel(channel)
+    );
+
+    return serializedChannels;
   };
 };

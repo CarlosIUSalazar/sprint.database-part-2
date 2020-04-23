@@ -119,7 +119,7 @@ describe("channels", () => {
           .create(params)
           .then(forcePromiseReject)
           .catch((err) =>
-            expect(err.message).to.equal("That channel already exists")
+            expect(err.message).to.equal("That channel already exists!!")
           ));
     });
   });
