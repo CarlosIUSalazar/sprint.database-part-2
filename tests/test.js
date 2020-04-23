@@ -145,7 +145,7 @@ describe("channels", () => {
   });
 });
 
-describe("channel_messages", () => {
+describe.only("channel_messages", () => {
   let fromId;
   let channelId;
   let otherChannelId;

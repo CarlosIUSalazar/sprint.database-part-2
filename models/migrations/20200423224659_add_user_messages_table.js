@@ -4,7 +4,7 @@ exports.up = function(knex, Promise) {
     t.increments() // auto-incrementing id column
       .index(); // index this column
 
-    t.string("form_id", 15) // maximum length of 15 characters
+    t.string("from_id", 15) // maximum length of 15 characters
       //.unique() // add a unique constraint to this column
       .notNullable() // add a not-null constraint to this column
       .index(); // index it
