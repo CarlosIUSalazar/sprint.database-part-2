@@ -1,185 +1,184 @@
-# データベース パート II. Clack の構築
-### This was created during my time as a [Code Chrysalis](https://codechrysalis.io) Student
+# Databases Part II. Building Clack
 
-## 目次
+## Table of Contents
 
-1.  [前書き](#preface)
-1.  [はじめに](#introduction)
-1.  [トピックの概要](#overview-of-topics)
+1.  [Preface](#preface)
+1.  [Introduction](#introduction)
+1.  [Overview of Topics](#overview-of-topics)
     1.  [Knex](#knex)
-    1.  [マイグレーション](#migrations)
+    1.  [Migrations](#migrations)
     1.  [ORMs](#orms)
-1.  [環境設定](#environment)
-    1.  [依存パッケージのインストールとスタートアップ](#installing-dependencies-and-startup)
-1.  [課題と手順について](#objectives-and-instructions)
-    1.  [基礎レベル](#basic-requirements)
-    1.  [追加の課題](#extra-credit)
-1.  [参考資料](#resources)
-1.  [コントリビューション](#contributing)
+1.  [Environment](#environment)
+    1.  [Installing Dependencies and Startup](#installing-dependencies-and-startup)
+1.  [Objectives & Instructions](#objectives-and-instructions)
+    1.  [Basic Requirements](#basic-requirements)
+    1.  [Extra Credit](#extra-credit)
+1.  [Resources](#resources)
+1.  [Contributing](#contributing)
 
-## 前書き
+## Preface
 
-このプロジェクトは以前見てきたものよりも複雑で、CC を卒業して最初の職を得て、あるタスクを任された場合を想定しています。圧倒されてしまうのが **普通** です。
+This project is more complex than what you have seen before, it is supposed to mimic you graduating, getting your first job, being asked to handle a certain task. It is **normal** to feel overwhelmed. 
 
-あなたをサポートするために、いくつかの指針を以下に示します：
+Here are some pointers to go help you through this:
 
-- 大規模なプロジェクトでは、別のチームに所属したり、開発者が別のタスクやプロジェクトの一部を作業することになるため、すべてを理解するための十分な時間がありません。
-- 特定のタスクを持ち、あなたが作業する必要のある箇所がコードベースの _どこにあるか_ 見つけることを優先する必要が出てくるでしょう。
-- VSCode はあなたの友達です。必要な箇所を見つけるために、`CMD + P` を使用してファイル間をすばやく移動し、”マイグレーション”などの用語を検索しましょう。
-- あなたはすべてを把握していなくても気にならないようになる必要があります、覚えておいてください：Conjure, CONJURE, CONJURE
+* In bigger Projects, you either have another team or developers work on separate tasks and parts of the project, so you do not need to and can not spend time trying to understand everything
+* You will have a certain task, prioritize finding out _where_ in the code base you have to work on
+* VSCode is your best friend, use `CMD + P` to quickly navigate through files, searching for terms like "migration", to help you find what you need
+* You will need to get comfortable not knowing everything, keep in mind: Conjure, CONJURE, CONJURE
 
-## はじめに
+## Introduction
 
-このスプリントの後半では、よくあるチャットアプリで、アプリのビジネスロジックとデータベースを統合する方法について説明します。デファクトスタンダードである [knex](http://knexjs.org/) を使用して Node で SQL を記述して、マイグレーションと、_常に_ データベースを意識せずにビジネスロジックを記述できるようにシンプルな ORM を書く方法について見ていきます。シンプルなチャットアプリである `Clack - The Crappy Slack` のバックエンドを構築します。ユーザは以下の操作を行うことができます：
+In this second half of we'll look at integrating a database around the business logic of an app, in the context of the ever-ubiquitous chat app. We'll look at migrations, writing SQL in node using the de-facto standard [knex](library), and at writing a simple ORM so we can get on with writing our business logic without _always_ thinking about databases. We're going a build the backend for a `Clack - The Crappy Slack`, a simple chat app that allows a user to:
 
-- お互いにメッセージを送受信する。
-- チャンネルを作成する。
-- チャンネルに参加する。
-- 参加したチャンネルからメッセージを送受信する。
+- Send and receive messages to and from each other
+- Create channels
+- Join channels
+- send and receive messages from channels they've joined
 
-このスプリントでは、ルーティングとフロントエンドに関しては、あなたのためにほとんど用意しておきました。今回の課題では、ほとんどの時間を `./services/db/*` に注力しましょう。
+Note that in this sprint, the routes and front-end are mostly done for you. You'll spend most of your time in `./services/db/*`.
 
-## トピックの概要
+## Overview of Topics
 
 ### Knex
 
-このスプリントの前半では、生の SQL を記述してデータベースとやり取りをしました。ご想像のとおり、これは時として苦痛であるため、SQL をより javascript ライクな方法で記述できるライブラリを使用して Node でデータベースとやり取りすることをお勧めします。[Knex](http://knexjs.org/) はこのためのデファクトスタンダードなライブラリであり、このスプリントでは Knex を頻繁に利用します。Knex のドキュメントを頻繁に読むことになるため、ドキュメントを 1 つのタブに開いたままにしておくことをお勧めします。簡単に言うと、knex はクエリビルダーです。つまり、Knex は、通常の Javascript でクエリを記述し、それを SQL に変換することができます。恐れてはいけません。それを受け入れましょう。
+In the first half of this sprint, you interacted with the database by writing raw SQL. This, as you can imagine, can be a pain, and it's much preferred to interact with your database in Node by using a library that lets you write SQL in a more javascripty way. [Knex](http://knexjs.org/) is the de-facto standard library for this, and you'll be using it a lot in this sprint. I suggest you keep the documentation open in one tab, because you'll be reading it a lot. In a nutshell, knex is a Query Builder, i.e., all it does is let you write queries in normal Javascript that it then converts to SQL for you. Don't be afraid. Embrace it.
 
-### マイグレーション
+### Migrations
 
-マイグレーションについては、前半のスプリントの追加課題で説明しましたが、前回それに取り組んでいなくても問題ありません。-- ここでもう一度説明します。
+We covered this in the extra-credit section of the first half of this sprint, but if you didn't get there, don't worry—-we'll be going over it again here.
 
-テーブルのスキーマを変更するたびに、マイグレーション内でスキーマの変更を行います。マイグレーションとは、何らかの方法でスキーマを変更し、新しいスキーマに適合するようにデータを修正する一連のクエリです。マイグレーションは _常に_ トランザクション内で行われるべきです。トランザクションについてよくわからない場合は、前のスプリントの追加課題の説明を読むことで、このスプリントで必要となるトランザクションについて理解することができます。
+Whenever we change the schema of a table, we do so within a migration. A migration is a set of queries that change the schema in some way, and alter the data to fit within the new schema. Migrations should _always_ happen within a transaction. If you're not familiar with transactions, you can read everything you need to know about them for this sprint in the extra-credit section of the last sprint.
 
-困った時は、必要であればトランザクションに関する[この短いチュートリアル](https://www.tutorialspoint.com/postgresql/postgresql_transactions.htm)を試してみましょう。
+If you find yourself struggling, do as much of [This short tutorial](https://www.tutorialspoint.com/postgresql/postgresql_transactions.htm) on transactions as you feel you need to.
 
 ### ORMs
 
-ORM はオブジェクト関係マッピング（Object Relational Mapping）の略であり、データベースの出力結果をオブジェクトに変換します。データベースの出力結果とオブジェクトの違いは、オブジェクトはメソッドを持つことができ、そのメソッドはあらゆる種類の処理を実行するのに利用されるという点です。このスプリントでは、ユーザー、メッセージ、およびチャンネル用のクラスを作成します。クラスが提供してくれる標準化と予測性について理解してもらえるとうれしいです。
+An ORM is an Object Relational Mapping, i.e., something that converts database results into Objects. The distinction here is that objects can have methods, and methods can be useful for all kinds of things. We'll be creating a classes for users, messages, and channels in this sprint, and hopefully you'll appreciate the sense of standardisation and predictability they'll give you.
 
-Node 用に作成されたいくつかの ORM ライブラリがあることに注意してください。一般的に次の理由により、意図的にそれらを今回使用していません。
+Note that there any several ORM libraries built for node. We've deliberately not used them because in general:
 
-- それらのライブラリはまだあまり成熟していません…。単純なユースケースではうまく機能しますが、ほとんどのプロジェクトではすぐに手がつけられなくなります。
-- 現実の世界で、ORM がどのように機能するかについて学習してほしいと考えています。
+- They're not yet very mature... they work well for simple use cases but most projects quickly outgrow them
+- We want you to learn about how things work in real life.
 
-興味を持った人は、おそらく Node で最も人気のある ORM である [Bookshelf](http://bookshelfjs.org/) をチェックしてみましょう。
+For the curious among you, check out [Bookshelf](http://bookshelfjs.org/), possibly the most popular ORM for node.
 
-## 環境設定
+## Environment
 
 ### Postgres
 
-postgres をインストールする必要があります。もし、まだインストールしていない場合は、[PostgresApp](https://postgresapp.com/) をダウンロードしてインストールし、ターミナルで `psql` コマンドを実行して postgres が起動していることを確認しましょう。
+You will need postgres installed. If you haven't installed it already, download and install the [PostgresApp](https://postgresapp.com/) and verify its working by running the command `psql` in your terminal.
 
-次を実行して、このプロジェクトのデータベースを作成しましょう：
+Create a database for this project by running:
 
 ```bash
     echo "CREATE DATABASE clack;" | psql
 ```
 
-### 依存パッケージとスタートアップ
+### Installing Dependencies and Startup
 
-例：
+Example:
 
-依存パッケージをインストールするには：
+To install dependencies:
 
 ```bash
     yarn
 ```
 
-マイグレーションを実行し、データベースをセットアップするには：
+To run migrations and set up the database:
 
 ```bash
     yarn migrate
 ```
 
-マイグレーションをロールバックするには：
+To roll back migrations
 
 ```bash
     yarn rollback
 ```
 
-テストを実行するには：
+To run tests:
 
 ```bash
     yarn test
 ```
 
-アプリを実行するには：
+To run the app:
 
 ```bash
     yarn start
 ```
 
-## 課題と手順について
+## Objectives and Instructions
 
-### 基礎レベル
+### Basic Requirements
 
-- これから作成するバックエンドに合わせて、非常にシンプルなクライアントアプリを用意しておきました。
-  - アプリを表示するために、`yarn start` を使用してアプリを起動しましょう。
-  - ブラウザで `localhost：3000` に移動しましょう。
-  - バックエンドはまだ何も動作しないため、機能はかなり制限されてます。ユーザーとして作成/サインインを行えるだけです
-  - チャンネルの取得、ユーザーの取得、メッセージの送受信を実装する必要があります。
-- 今回作成するような API をテストするには、[Insomnia](https://insomnia.rest/) もしくは [Postman](https://www.getpostman.com/) のような API をテストするツールがあると便利です。
+- We've provided a very, very simple client app to go along with the backend you'll be completing.
+  - To see it, start the app using `yarn start`
+  - Navigate to `localhost:3000` in your browser
+  - The functionality will be pretty limited since the backend doesn't do anything yet, all you can do is create/sign in as a user
+  - You will have to implement getting channels, getting users, and sending and receiving messages.
+- For testing out APIs like the one you'll be building today, its useful to have an API testing tool like [Postman](https://www.getpostman.com/)
 
-  - ダウンロードして使い慣れておくことをお勧めしますが、使用するかは完全に任意です。
-    - 完全に慣れるまで 10 分もかかりません。
+  - We recommend you download and get familiar with it, but its totally optional.
+    - It should take you less than 10 minutes to become completely familiar with it.
 
-- [ ] 20〜30 分程度かけて、リポジトリのレイアウトを理解しましょう。どのように機能するのかという点に特に注目してください。
-  - `config.js` に含まれる設定情報は `index.js` 内の services に渡されます。
-  - `models/index.js` は knex を使用してデータベースへの接続を初期化します。データベースへの接続情報はサブモジュールに渡されます。
-  - `models/users/index.js` が展開され、`User` クラスと `knex` は、そのモジュールに含まれるすべてのメソッドに渡されます。
-  - `models/users/create.js` はその依存関係を使用して、`serialize` メソッドで同じ標準化された user モデルを返します。
-  - `controllers/user/index.js` は `models` メソッドを使用して基本的な CRUD 操作を実行します。
-- [ ] テスト（specs）をパスしましょう。
+- [ ] Take 20-30 minutes to understand the layout of the repo. Pay particular attention to how
+  - configs are passed into services in `index.js`, and what information is contained in `config.js`
+  - `models/index.js` initializes a connection to the database using knex, which is a then passed to the submodules
+  - `models/users/index.js` is laid out, and that the `User` class and `knex` are passed to all the methods contained in it
+  - `models/users/create.js` uses its dependencies to return the same a standardised user model, with a `serialize` method
+  - `controllers/user/index.js` uses `models` methods to perform basic crud operations
+- [ ] Make the specs pass
 
-  - [ ] `models.users.list` が期待どおりに動作するようにしましょう。
+  - [ ] Make `models.users.list` work as expected
 
-  - [ ] `channels` テーブルを作成するマイグレーションファイルを追加しましょう。
-    - `knex migrate:make add_channels_table --knexfile models/knexfile.js` を実行して、新しいマイグレーションファイルを作成します。
-    - ファイルに、`id` 列と `name` 列を含める必要があります。
-    - `models/migrations/`にある既存のマイグレーションファイルを参考してください。
-      - `yarn run migrate` でマイグレーションを実行し、`yarn run rollback` でマイグレーションをロールバックできます。
-  - [ ] channels の `list` と `create` 内のメソッドを完成させましょう。
+  - [ ] Add a migration to create a `channels` table.
+    - Run `knex migrate:make add_channels_table --knexfile models/knexfile.js` to create a new migration
+    - It should include the columns `id` and `name`
+    - Use the existing migration in `models/migrations/` for reference.
+      - You can run you migrations using `yarn run migrate`, and roll them back using `yarn run rollback`
+  - [ ] Complete the methods to `list` and `create` channels.
 
-  - [ ] マイグレーションファイルを追加して、`channel_messages` テーブルを作成しましょう。
-    - `knex migrate:make add_channel_messages_table --knexfile models/knexfile.js` を実行して、新しいマイグレーションファイルを作成します。
-    - `id`、`channel_id`、`from_id`、`message`、`sent_at`の列を含める必要があります。
-  - [ ] channelMessages の `list` と `create` 内のメソッドを完成させましょう。
+  - [ ] Add a migration to create a `channel_messages` table.
+    - Run `knex migrate:make add_channel_messages_table --knexfile models/knexfile.js` to create a new migration
+    - It should include the columns `id`, `channel_id`, `from_id`, `message` and `sent_at`
+  - [ ] Complete the methods to `list` and `create` channel messages.
 
-    - create メソッドは、新しいメッセージを作成した後、そのチャンネル内のすべての ChannelMessages を返す必要があることに注意してください。
+    - Note that the create method should return all the ChannelMessages in that channel after creating the new message
 
-  - [ ] マイグレーションファイルを追加して、`user_messages` テーブルを作成しましょう。
-    - `knex migrate:make add_user_messages_table --knexfile models/knexfile.js` を実行して、新しいマイグレーションファイルを作成します。
-    - `id`、`from_id`、`to_id`、`message`、`sent_at` の列を含める必要があります。
-  - [ ] 特定のユーザーのペアに対する userMessages の `list` と `create` 内のメソッドを完成させましょう。
+  - [ ] Add a migration to create a `user_messages` table.
+    - Run `knex migrate:make add_user_messages_table --knexfile models/knexfile.js` to create a new migration
+    - It should include the columns `id`, `from_id`, `to_id`, `message` and `sent_at`
+  - [ ] Add methods to `list` and `create` messages for a given pair of users
 
-### 追加課題
+### Extra Credit
 
-- [ ] ユーザーとチャンネル間の結合テーブルを作成しましょう。
-  - `user_id`、`channel_id`、`read_up_to`（タイムスタンプ）を表示する必要があります。
-- [ ] 次の動作に対するテストを作成し、実装しましょう：
+- [ ] Create a join table between users and channels showing
+  - `user_id`, `channel_id`, `read_up_to` (timestamp)
+- [ ] Write tests for, and implement the following behaviour:
 
-  - ユーザーがチャンネルでメッセージを取得するたびに、
-    - そのチャネルとユーザーの read_up_to の後に送信されたすべてのメッセージに対して、追加の boolean プロパティに read：false を、残りに read：true をマークします。
-    - そのユーザーとチャンネルの `read_up_to` を現在の時刻に更新します。
+  - Whenever a user gets the messages in a channel
+    - mark all messages sent _after_ the read_up_to for that channel and user with an additional boolean property read: false, and the remainder with read: true
+    - update the `read_up_to` for that user and channel to be the current time
 
-- [ ] [Bookshelf](http://bookshelfjs.org/) を使用して、データベースモジュールをすべて書き換えましょう。テストを変更する必要はありません。
+- [ ] Rewrite any of the database modules we have using [Bookshelf](http://bookshelfjs.org/). You should not have to change the tests.
 
-- [ ] クライアントアプリに”サインイン”できるようにしましょう。
-  - [ ] [このビデオ](https://www.youtube.com/watch?v=8ZtInClXe1Q)を見て、パスワードを保存する上でのジレンマや、それらをセキュアに保存する方法について学びましょう。
-  - [ ] マイグレーションファイルを追加して、user テーブルに 'password' フィールドを追加しましょう。
-  - [ ] 次の動作に対するテストを作成し、実装しましょう。
-    - ユーザー名に加えてパスワードを要求するように create メソッドを修正しましょう。
-    - [bcrypt](https://www.npmjs.com/package/bcrypt) を使用して、パスワードを保存するときにパスワードをハッシュ化します。
-    - ユーザー名とパスワードを受け取る `authenticate` という名前の users モジュールにメソッドを追加し、データベース内のユーザー名とパスワードを照合します。
+- [ ] Enable the client app to 'sign in'.
+  - [ ] Watch [this video](https://www.youtube.com/watch?v=8ZtInClXe1Q) about the dilemas of storing passwords, and how to store them semi-securely
+  - [ ] Add a migration to add a 'password' field in the users table
+  - [ ] Write tests for, and implement the following behaviour
+    - Alter the create method to require a password in addition to the username
+    - Hash the passwords when storing them using [bcrypt](https://www.npmjs.com/package/bcrypt)
+    - Add a method to the users module named `authenticate` that accepts a username and password, and checks the username and password against those in the database.
 
-## 参考資料
+## Resources
 
-- [Knex ドキュメント](http://knexjs.org/)
-- [トランザクションに関する簡単なチュートリアル](https://www.tutorialspoint.com/postgresql/postgresql_transactions.htm)
-- [Express v4.x ドキュメント](https://expressjs.com/ja/4x/api.html)
-- [Chai アサーションライブラリ](http://chaijs.com/api/)
+- [Knex Documentation](http://knexjs.org/)
+- [A brief tutorial on transactions](https://www.tutorialspoint.com/postgresql/postgresql_transactions.htm)
+- [Express v4.x Documentation](https://expressjs.com/en/api.html)
+- [Chai Assertion Library](http://chaijs.com/api/)
 
-## コントリビューション
+## Contributing
 
-何か問題点はありましたか？何か改善すべき点がありましたか？[私たちのカリキュラムに貢献しましょう](mailto:hello@codechrysalis.io)！
+See a problem? Can something be done better? [Contribute to our curriculum](mailto:hello@codechrysalis.io)!
